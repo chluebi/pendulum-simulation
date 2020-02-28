@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/p5"></script>
+<script>
+
+const urlParams = new URLSearchParams(window.location.search)
+
+pendulum = {
+x: 0,
+y: 0,
+v: 0,
+angle: 0
+}
+
+angles = []
+
+inital_angle = 0
+canvas_width = 700
+canvas_height = 700 + 500
+
+g = parseFloat(urlParams.get('g'))
+pendulum_length = parseFloat(urlParams.get('len'))
+air_density = parseFloat(urlParams.get('density'))
+pendulum_radius = parseFloat(urlParams.get('r'))
+pendulum_mass = parseFloat(urlParams.get('m'))
+
+visual_length = parseFloat(urlParams.get('vlen'))
+visual_radius = parseFloat(urlParams.get('vr'))
+
+time = 0
+last_time = 0
+mode = 1
+
+speed = parseFloat(urlParams.get('speed'))
+initial_angle = -parseFloat(urlParams.get('ang'))
+
+function setup() {
+  
+  pendulum.x = canvas_width / 2 + sin(pendulum.angle) * pendulum_length
+  pendulum.y = canvas_height / 2 + cos(pendulum.angle) * pendulum_length
+  
+  createCanvas(canvas_width, canvas_height);
+  pendulum.angle = initial_angle
+}
+
+function draw() {
+  angles.push(pendulum.angle)
+  time += 1
+  forces()
+  update_pos()
+  
+  background(220)
+  draw_pendulum()
+  draw_diagram()
+  measurements()
+}
+
+function forces() {
+  acceleration = - g/pendulum_length * sin(pendulum.angle)
+  drag_force = 1/2 * 0.47 * air_density * 2 * pendulum_radius**2 * (pendulum.v)**2
+
+  drag_force = min(drag_force, abs(acceleration))
+  console.log('v', pendulum.v, drag_force)
+  
+  pendulum.v += acceleration - dir(pendulum.v) * drag_force / pendulum_mass
+  
+  pendulum.angle_change = pendulum.v
+  pendulum.angle += pendulum.angle_change / max(20, frameRate()) / (5/0.6)**2 * speed**2
+  pendulum.angle = pendulum.angle % (2*PI)
+}
+
+function dir(val) {
+  if (val > 0) {return 1}
+  if (val < 0) {return -1}
+  if (val == 0) {return 0}
+}
+
+function update_pos() {
+  pendulum.x = canvas_width / 2 + sin(pendulum.angle) * visual_length
+  pendulum.y = canvas_height / 2 + cos(pendulum.angle) * visual_length
+}
+
+
+function draw_pendulum() {
+  line(canvas_width / 2, canvas_height / 2, pendulum.x, pendulum.y)
+  circle(pendulum.x, pendulum.y, visual_radius * 2)
+}
+
+function draw_diagram() {
+  mid = canvas_height - 250
+  w = canvas_width - 40
+  l = angles.length
+  
+  for (i=max(0,l-w);i<l;i++) {
+    cur = angles[i] * 50
+    stroke(color(255, 0, 0))
+    circle(i + 20 - max(0,l-w), mid+cur, 2)
+    stroke(color(70, 70, 70))
+  }
+}
+
+function measurements(){
+  if (mode == 0) {
+    if (abs(pendulum.v) < 10/pendulum_length)     {
+      last_time = time
+      mode = 1
+    }
+    return
+  }
+  if (mode == 1) {
+    if (abs(pendulum.v) > 100/pendulum_length/speed) {
+      mode = 0
+    }
+  }
+  
+}
+</script>
+</body>
+</html>
+
